@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <iostream>
 #include <cstdlib>
+#include <sys/time.h>
 
 #define TILE_SX 32
 #define TILE_SY 32
@@ -41,6 +42,12 @@ void __global__ derivs(const double * v, double *v_x, double *v_y, double *v_xy)
   }
 }
 
+double now() {
+  timeval t;
+  gettimeofday(&t, NULL);
+  return t.tv_sec + t.tv_usec*1e-6;
+}
+
 int main(void) {
   double *v = (double*)calloc(TILE_SX * TILE_SY, sizeof(*v));
   double *v_x = (double*)calloc(TILE_SX * TILE_SY, sizeof(*v_x));
@@ -56,18 +63,24 @@ int main(void) {
   cudaMalloc(&d_v_xy, TILE_SX * TILE_SY * sizeof(*v_xy));
   CUDA_CHECK;
 
-  cudaMemcpy(d_v, v, TILE_SX * TILE_SY * sizeof(*v), cudaMemcpyHostToDevice);
-  CUDA_CHECK;
-  dim3 dimBlock(TILE_SX, TILE_SY);
-  dim3 dimGrid(1, 1);
-  derivs<<<dimGrid, dimBlock>>>(d_v, d_v_x, d_v_y, d_v_xy);
-  CUDA_CHECK;
-  cudaMemcpy(v_x, d_v_x, TILE_SX * TILE_SY * sizeof(*v_x), cudaMemcpyDeviceToHost);
-  CUDA_CHECK;
-  cudaMemcpy(v_y, d_v_y, TILE_SX * TILE_SY * sizeof(*v_y), cudaMemcpyDeviceToHost);
-  CUDA_CHECK;
-  cudaMemcpy(v_xy, d_v_xy, TILE_SX * TILE_SY * sizeof(*v_xy), cudaMemcpyDeviceToHost);
-  CUDA_CHECK;
+  double start = now();
+  // TODO: run one without timint to get rid of initialization ost
+  for(int i = 0 ; i < 1000 ; i++) {
+    cudaMemcpy(d_v, v, TILE_SX * TILE_SY * sizeof(*v), cudaMemcpyHostToDevice);
+    CUDA_CHECK;
+    dim3 dimBlock(TILE_SX, TILE_SY);
+    dim3 dimGrid(1, 1);
+    derivs<<<dimGrid, dimBlock>>>(d_v, d_v_x, d_v_y, d_v_xy);
+    CUDA_CHECK;
+    cudaMemcpy(v_x, d_v_x, TILE_SX * TILE_SY * sizeof(*v_x), cudaMemcpyDeviceToHost);
+    CUDA_CHECK;
+    cudaMemcpy(v_y, d_v_y, TILE_SX * TILE_SY * sizeof(*v_y), cudaMemcpyDeviceToHost);
+    CUDA_CHECK;
+    cudaMemcpy(v_xy, d_v_xy, TILE_SX * TILE_SY * sizeof(*v_xy), cudaMemcpyDeviceToHost);
+    CUDA_CHECK;
+  }
+  double end = now();
+  std::cout << "took " << (end-start) << " s\n";
 
   return 0;
 }
