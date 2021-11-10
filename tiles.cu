@@ -62,11 +62,11 @@ int main(void) {
   dim3 dimGrid(1, 1);
   derivs<<<dimGrid, dimBlock>>>(d_v, d_v_x, d_v_y, d_v_xy);
   CUDA_CHECK;
-  cudaMemcpy(d_v_x, v_x, TILE_SX * TILE_SY * sizeof(*v_x), cudaMemcpyDeviceToHost);
+  cudaMemcpy(v_x, d_v_x, TILE_SX * TILE_SY * sizeof(*v_x), cudaMemcpyDeviceToHost);
   CUDA_CHECK;
-  cudaMemcpy(d_v_y, v_y, TILE_SX * TILE_SY * sizeof(*v_y), cudaMemcpyDeviceToHost);
+  cudaMemcpy(v_y, d_v_y, TILE_SX * TILE_SY * sizeof(*v_y), cudaMemcpyDeviceToHost);
   CUDA_CHECK;
-  cudaMemcpy(d_v_xy, v_xy, TILE_SX * TILE_SY * sizeof(*v_xy), cudaMemcpyDeviceToHost);
+  cudaMemcpy(v_xy, d_v_xy, TILE_SX * TILE_SY * sizeof(*v_xy), cudaMemcpyDeviceToHost);
   CUDA_CHECK;
 
   return 0;
