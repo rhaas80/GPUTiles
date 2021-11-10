@@ -14,8 +14,9 @@ double __device__ dy(const double * v, const int dj) {
 }
 
 #define CUDA_CHECK do { \
-  if(cudaGetLastError() != cudaSuccess) { \
-    std::cerr << "CUDA Failure at " << __LINE__ << "\n"; \
+  cudaError res = cudaGetLastError(); \
+  if(res != cudaSuccess) { \
+    std::cerr << "CUDA Failure at " << __LINE__ << " " << cudaGetErrorString(res) << "\n"; \
     exit(1); \
   } \
 } while(0) 
@@ -47,17 +48,26 @@ int main(void) {
   double *v_xy = (double*)calloc(TILE_SX * TILE_SY, sizeof(*v_xy));
   double *d_v, *d_v_x, *d_v_y, *d_v_xy;
   cudaMalloc(&d_v, TILE_SX * TILE_SY * sizeof(*v));
+  CUDA_CHECK;
   cudaMalloc(&d_v_x, TILE_SX * TILE_SY * sizeof(*v_x));
+  CUDA_CHECK;
   cudaMalloc(&d_v_y, TILE_SX * TILE_SY * sizeof(*v_y));
+  CUDA_CHECK;
   cudaMalloc(&d_v_xy, TILE_SX * TILE_SY * sizeof(*v_xy));
+  CUDA_CHECK;
 
   cudaMemcpy(d_v, v, TILE_SX * TILE_SY * sizeof(*v), cudaMemcpyHostToDevice);
+  CUDA_CHECK;
   dim3 dimBlock(TILE_SX, TILE_SY);
   dim3 dimGrid(1, 1);
   derivs<<<dimGrid, dimBlock>>>(d_v, d_v_x, d_v_y, d_v_xy);
+  CUDA_CHECK;
   cudaMemcpy(d_v_x, v_x, TILE_SX * TILE_SY * sizeof(*v_x), cudaMemcpyDeviceToHost);
+  CUDA_CHECK;
   cudaMemcpy(d_v_y, v_y, TILE_SX * TILE_SY * sizeof(*v_y), cudaMemcpyDeviceToHost);
+  CUDA_CHECK;
   cudaMemcpy(d_v_xy, v_xy, TILE_SX * TILE_SY * sizeof(*v_xy), cudaMemcpyDeviceToHost);
+  CUDA_CHECK;
 
   return 0;
 }
